@@ -44,15 +44,15 @@ module "storage" {
 module "log_shipping" {
   source = "./modules/log-shipping"
 
-  project_name        = var.project_name
-  network_name        = module.network.network_name
-  vector_version      = var.vector_version
-  elasticsearch_host  = module.siem.elasticsearch_host
-  elasticsearch_port  = module.siem.elasticsearch_internal_port
-  minio_endpoint      = module.storage.minio_internal_endpoint
-  minio_access_key    = var.minio_root_user
-  minio_secret_key    = var.minio_root_password
-  labels              = local.common_labels
+  project_name       = var.project_name
+  network_name       = module.network.network_name
+  vector_version     = var.vector_version
+  elasticsearch_host = module.siem.elasticsearch_host
+  elasticsearch_port = module.siem.elasticsearch_internal_port
+  minio_endpoint     = module.storage.minio_internal_endpoint
+  minio_access_key   = var.minio_root_user
+  minio_secret_key   = var.minio_root_password
+  labels             = local.common_labels
 
   depends_on = [module.siem, module.storage]
 }
@@ -61,11 +61,11 @@ module "log_shipping" {
 module "linux_target" {
   source = "./modules/linux-target"
 
-  project_name  = var.project_name
-  network_name  = module.network.network_name
-  target_image  = var.linux_target_image
-  vector_host   = module.log_shipping.vector_host
-  labels        = local.common_labels
+  project_name = var.project_name
+  network_name = module.network.network_name
+  target_image = var.linux_target_image
+  vector_host  = module.log_shipping.vector_host
+  labels       = local.common_labels
 
   depends_on = [module.log_shipping]
 }

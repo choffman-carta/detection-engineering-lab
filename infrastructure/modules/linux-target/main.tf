@@ -118,11 +118,11 @@ EOT
 
 resource "local_file" "osquery_conf" {
   filename = "${path.module}/build/osquery.conf"
-  content  = jsonencode({
+  content = jsonencode({
     options = {
-      logger_plugin     = "filesystem"
-      logger_path       = "/var/log/osquery"
-      disable_logging   = false
+      logger_plugin          = "filesystem"
+      logger_path            = "/var/log/osquery"
+      disable_logging        = false
       schedule_splay_percent = 10
     }
     schedule = {
@@ -160,8 +160,8 @@ resource "local_file" "osquery_conf" {
       }
     }
     file_paths = {
-      etc = ["/etc/%%"]
-      tmp = ["/tmp/%%"]
+      etc  = ["/etc/%%"]
+      tmp  = ["/tmp/%%"]
       home = ["/home/%%"]
     }
   })
