@@ -1,0 +1,159 @@
+# Docker Compose alternative to Terraform
+# Use: docker compose up -d
+#
+# For custom credentials, create a .env file with:
+#   MINIO_ROOT_USER=your_user
+#   MINIO_ROOT_PASSWORD=your_secure_password
+
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: detection-lab-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - ES_JAVA_OPTS=-Xms4g -Xmx4g
+      - cluster.name=detection-lab-cluster
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - detection-lab
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "project=detection-lab"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: detection-lab-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=detection-lab-kibana
+      - XPACK_SECURITY_ENABLED=false
+    ports:
+      - "5601:5601"
+    networks:
+      - detection-lab
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q '\"level\":\"available\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    labels:
+      - "project=detection-lab"
+
+  minio:
+    image: minio/minio:latest
+    container_name: detection-lab-minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - detection-lab
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "project=detection-lab"
+
+  vector:
+    image: timberio/vector:0.34.1-alpine
+    container_name: detection-lab-vector
+    volumes:
+      - ./infrastructure/modules/log-shipping/config/vector.toml:/etc/vector/vector.toml:ro
+      - vector-data:/var/lib/vector
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "5514:5514/udp"
+      - "8080:8080"
+      - "8686:8686"
+    networks:
+      - detection-lab
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      - VECTOR_CONFIG=/etc/vector/vector.toml
+      - VECTOR_LOG=info
+    labels:
+      - "project=detection-lab"
+
+  linux-target:
+    build:
+      context: ./infrastructure/modules/linux-target/build
+      dockerfile: Dockerfile
+    container_name: detection-lab-linux-target
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
+      - NET_RAW
+      - NET_ADMIN
+      - AUDIT_CONTROL
+      - AUDIT_READ
+    environment:
+      - VECTOR_HOST=vector
+      - LAB_NAME=detection-lab
+    networks:
+      - detection-lab
+    depends_on:
+      - vector
+    labels:
+      - "project=detection-lab"
+
+  # Optional: MITRE Caldera
+  # Uncomment to enable
+  # caldera:
+  #   image: mitre/caldera:4.2.0
+  #   container_name: detection-lab-caldera
+  #   ports:
+  #     - "8888:8888"
+  #     - "7010:7010"
+  #     - "7011:7011"
+  #     - "7012:7012"
+  #   volumes:
+  #     - caldera-data:/usr/src/app/data
+  #   networks:
+  #     - detection-lab
+  #   labels:
+  #     - "project=detection-lab"
+
+networks:
+  detection-lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  elasticsearch-data:
+    name: detection-lab-elasticsearch-data
+  minio-data:
+    name: detection-lab-minio-data
+  vector-data:
+    name: detection-lab-vector-data
+  # caldera-data:
+  #   name: detection-lab-caldera-data

@@ -1,0 +1,48 @@
+title: Suspicious PowerShell Download Commands
+id: 6c91e6a6-f5f1-5b98-c8f1-6b4f8d9f1e02
+status: experimental
+description: |
+  Detects PowerShell commands used to download content from the internet.
+  Common technique used for initial access and malware delivery.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://attack.mitre.org/techniques/T1105/
+author: Detection Lab
+date: 2024/01/15
+modified: 2024/01/15
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.command_and_control
+  - attack.t1105
+logsource:
+  product: windows
+  service: sysmon
+detection:
+  selection_image:
+    EventID: 1
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  selection_download:
+    CommandLine|contains:
+      - 'DownloadString'
+      - 'DownloadFile'
+      - 'DownloadData'
+      - 'Invoke-WebRequest'
+      - 'iwr '
+      - 'wget '
+      - 'curl '
+      - 'Net.WebClient'
+      - 'Start-BitsTransfer'
+  selection_encoded:
+    CommandLine|contains:
+      - '-enc'
+      - '-encodedcommand'
+      - 'FromBase64String'
+  condition: selection_image and (selection_download or selection_encoded)
+falsepositives:
+  - Legitimate PowerShell scripts that download content
+  - System administration scripts
+  - Software installers
+level: medium

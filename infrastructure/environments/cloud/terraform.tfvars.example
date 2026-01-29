@@ -1,0 +1,26 @@
+# Cloud Environment Configuration (AWS Example)
+# Copy this file to terraform.tfvars and customize
+
+project_name = "detection-lab"
+environment  = "cloud"
+
+# For cloud deployments, you'll need to:
+# 1. Update providers.tf to use AWS/Azure providers
+# 2. Modify modules to use cloud-native services:
+#    - siem/ -> AWS OpenSearch or Elastic Cloud
+#    - storage/ -> AWS S3
+#    - linux-target/ -> EC2 instances
+#    - log-shipping/ -> Vector on EC2 or Lambda
+
+# SIEM (OpenSearch)
+elasticsearch_version = "2.11"
+elasticsearch_memory  = "8g"
+
+# Storage (S3)
+# minio_* variables become s3_* variables
+
+# Compute
+linux_target_image = "ami-0c55b159cbfafe1f0"  # Ubuntu 22.04 LTS
+
+# Enable Caldera in cloud for team testing
+enable_caldera = true

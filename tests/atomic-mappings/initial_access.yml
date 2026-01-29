@@ -1,0 +1,44 @@
+# Atomic Red Team Test Mappings for Initial Access Detections
+
+mappings:
+  - detection: panther/rules/aws_root_login.py
+    description: AWS Root Account Login Detection
+    atomic_tests:
+      - technique: T1078.004
+        name: Cloud Accounts
+        test_numbers: [1]
+    log_sources:
+      - cloudtrail
+    platforms:
+      - aws
+    validation:
+      - check: eventName == 'ConsoleLogin'
+      - check: userIdentity.type == 'Root'
+    notes: |
+      This test requires AWS credentials and console access.
+      Use sample logs in logs/samples/aws_cloudtrail_samples.json for offline testing.
+
+  - detection: sigma/rules/aws_root_account_usage.yml
+    description: AWS Root Account Activity Detection
+    atomic_tests:
+      - technique: T1078.004
+        name: Cloud Accounts
+        test_numbers: [1]
+    log_sources:
+      - cloudtrail
+    platforms:
+      - aws
+
+  - detection: panther/rules/aws_iam_access_key_created.py
+    description: IAM Access Key Creation Detection
+    atomic_tests:
+      - technique: T1098.001
+        name: Additional Cloud Credentials
+        test_numbers: [1, 2]
+    log_sources:
+      - cloudtrail
+    platforms:
+      - aws
+    validation:
+      - check: eventName == 'CreateAccessKey'
+      - check: errorCode is null

@@ -1,0 +1,74 @@
+[
+  {
+    "eventVersion": "1.08",
+    "userIdentity": {
+      "type": "Root",
+      "principalId": "123456789012",
+      "arn": "arn:aws:iam::123456789012:root",
+      "accountId": "123456789012"
+    },
+    "eventTime": "2024-01-15T10:30:00Z",
+    "eventSource": "signin.amazonaws.com",
+    "eventName": "ConsoleLogin",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "203.0.113.50",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "requestParameters": null,
+    "responseElements": {
+      "ConsoleLogin": "Success"
+    },
+    "additionalEventData": {
+      "LoginTo": "https://console.aws.amazon.com/console/home",
+      "MobileVersion": "No",
+      "MFAUsed": "No"
+    }
+  },
+  {
+    "eventVersion": "1.08",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLE123456",
+      "arn": "arn:aws:iam::123456789012:user/admin",
+      "accountId": "123456789012",
+      "userName": "admin"
+    },
+    "eventTime": "2024-01-15T11:00:00Z",
+    "eventSource": "iam.amazonaws.com",
+    "eventName": "CreateAccessKey",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "10.0.1.50",
+    "userAgent": "aws-cli/2.13.0",
+    "requestParameters": {
+      "userName": "service-account"
+    },
+    "responseElements": {
+      "accessKey": {
+        "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+        "status": "Active",
+        "userName": "service-account",
+        "createDate": "2024-01-15T11:00:00Z"
+      }
+    }
+  },
+  {
+    "eventVersion": "1.08",
+    "userIdentity": {
+      "type": "IAMUser",
+      "principalId": "AIDAEXAMPLE789012",
+      "arn": "arn:aws:iam::123456789012:user/developer",
+      "accountId": "123456789012",
+      "userName": "developer"
+    },
+    "eventTime": "2024-01-15T12:00:00Z",
+    "eventSource": "s3.amazonaws.com",
+    "eventName": "GetObject",
+    "awsRegion": "us-east-1",
+    "sourceIPAddress": "10.0.1.100",
+    "userAgent": "aws-cli/2.13.0",
+    "requestParameters": {
+      "bucketName": "my-data-bucket",
+      "key": "reports/quarterly.csv"
+    },
+    "responseElements": null
+  }
+]

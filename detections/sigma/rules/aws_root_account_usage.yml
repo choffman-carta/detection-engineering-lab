@@ -1,0 +1,30 @@
+title: AWS Root Account Activity
+id: 7d02f7b7-g6g2-6ca9-d9g2-7c5g9e0g2f03
+status: stable
+description: |
+  Detects any activity from the AWS root account.
+  Root account usage should be minimized and monitored closely.
+references:
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html
+  - https://attack.mitre.org/techniques/T1078/004/
+author: Detection Lab
+date: 2024/01/15
+modified: 2024/01/15
+tags:
+  - attack.initial_access
+  - attack.t1078.004
+  - attack.persistence
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    userIdentity.type: 'Root'
+  filter_service:
+    # Filter out AWS service events
+    userIdentity.invokedBy|contains: '.amazonaws.com'
+  condition: selection and not filter_service
+falsepositives:
+  - Legitimate emergency root account usage
+  - Initial account setup
+level: high

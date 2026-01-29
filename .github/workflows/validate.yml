@@ -1,0 +1,107 @@
+name: Validate Detections
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'detections/**'
+      - 'lib/**'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'detections/**'
+      - 'lib/**'
+
+jobs:
+  validate-panther:
+    name: Validate Panther Rules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Validate Panther rule syntax
+        run: |
+          python scripts/run-detection.py validate detections/panther/rules/
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile detections/panther/rules/*.py
+          python -m py_compile lib/panther-mock/*.py
+
+  validate-sigma:
+    name: Validate Sigma Rules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sigma-cli
+        run: |
+          pip install sigma-cli
+
+      - name: Validate Sigma rules
+        run: |
+          sigma check detections/sigma/rules/
+
+  validate-yara:
+    name: Validate YARA Rules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install YARA
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y yara
+
+      - name: Validate YARA rules
+        run: |
+          for rule in detections/yara/rules/*.yar; do
+            echo "Validating: $rule"
+            yara -w "$rule" /dev/null || exit 1
+          done
+          echo "All YARA rules valid"
+
+  lint-terraform:
+    name: Lint Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: Terraform Format Check
+        run: |
+          cd infrastructure
+          terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: |
+          cd infrastructure
+          terraform init -backend=false
+          terraform validate

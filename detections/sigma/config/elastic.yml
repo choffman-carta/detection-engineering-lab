@@ -1,0 +1,86 @@
+# Sigma Configuration for Elasticsearch
+# Used by sigma-cli to convert Sigma rules to Elasticsearch queries
+
+title: Detection Lab Elasticsearch Configuration
+order: 20
+backends:
+  - elasticsearch
+
+logsources:
+  # Windows Event Logs
+  windows:
+    product: windows
+    index: detection-lab-logs-sysmon
+
+  windows-sysmon:
+    product: windows
+    service: sysmon
+    index: detection-lab-logs-sysmon
+
+  windows-security:
+    product: windows
+    service: security
+    index: detection-lab-logs-windows-security
+
+  windows-powershell:
+    product: windows
+    service: powershell
+    index: detection-lab-logs-powershell
+
+  # Linux logs
+  linux:
+    product: linux
+    index: detection-lab-logs-syslog
+
+  linux-auditd:
+    product: linux
+    service: auditd
+    index: detection-lab-logs-auditd
+
+  # Cloud logs
+  aws-cloudtrail:
+    product: aws
+    service: cloudtrail
+    index: detection-lab-logs-cloudtrail
+
+fieldmappings:
+  # Sysmon field mappings
+  CommandLine: CommandLine
+  Image: Image
+  ParentImage: ParentImage
+  ParentCommandLine: ParentCommandLine
+  User: User
+  ProcessId: ProcessId
+  ParentProcessId: ParentProcessId
+  TargetFilename: TargetFilename
+  DestinationIp: DestinationIp
+  DestinationPort: DestinationPort
+  SourceIp: SourceIp
+  SourcePort: SourcePort
+  Hashes: Hashes
+  Computer: Computer
+  EventID: EventID
+
+  # Windows Security field mappings
+  TargetUserName: TargetUserName
+  SubjectUserName: SubjectUserName
+  LogonType: LogonType
+  IpAddress: IpAddress
+  WorkstationName: WorkstationName
+  ProcessName: ProcessName
+
+  # Linux/Auditd field mappings
+  exe: exe
+  comm: comm
+  syscall: syscall
+  key: key
+  uid: uid
+  auid: auid
+
+  # AWS CloudTrail field mappings
+  eventName: eventName
+  eventSource: eventSource
+  sourceIPAddress: sourceIPAddress
+  userIdentity.type: userIdentity.type
+  userIdentity.arn: userIdentity.arn
+  errorCode: errorCode

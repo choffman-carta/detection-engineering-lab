@@ -1,0 +1,75 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+!*.tfvars.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+coverage.xml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/**/*.log
+!logs/samples/
+
+# Output
+output/
+
+# Docker
+docker-compose.override.yml
+
+# Secrets
+*.pem
+*.key
+.env.local
+secrets/
+credentials/
+
+# Local builds
+infrastructure/modules/linux-target/build/Dockerfile
+infrastructure/modules/linux-target/build/*.sh
+infrastructure/modules/linux-target/build/*.rules
+infrastructure/modules/linux-target/build/*.conf
+infrastructure/modules/log-shipping/config/vector.toml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+Thumbs.db
+.claude/
