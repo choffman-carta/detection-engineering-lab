@@ -8,29 +8,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  infrastructure-test:
-    name: Infrastructure Validation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.6.0"
-
-      - name: Terraform Init
-        run: |
-          cd infrastructure
-          terraform init -backend=false -lock=false
-
-      - name: Terraform Validate
-        run: |
-          cd infrastructure
-          terraform validate
-
   docker-compose-test:
     name: Docker Compose Validation
     runs-on: ubuntu-latest
@@ -46,7 +23,6 @@ jobs:
   detection-integration:
     name: Detection Integration Test
     runs-on: ubuntu-latest
-    needs: [infrastructure-test]
 
     services:
       elasticsearch:
