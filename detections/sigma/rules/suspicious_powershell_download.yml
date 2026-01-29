@@ -16,11 +16,10 @@ tags:
   - attack.command_and_control
   - attack.t1105
 logsource:
+  category: process_creation
   product: windows
-  service: sysmon
 detection:
   selection_image:
-    EventID: 1
     Image|endswith:
       - '\powershell.exe'
       - '\pwsh.exe'
