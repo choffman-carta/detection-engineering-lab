@@ -103,5 +103,5 @@ jobs:
       - name: Terraform Validate
         run: |
           cd infrastructure
-          terraform init -backend=false
+          terraform init -backend=false -lock=false
           terraform validate

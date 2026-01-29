@@ -72,3 +72,6 @@ temp/
 # OS
 Thumbs.db
 .claude/
+
+# Terraform lock file - excluded due to community provider signing issues
+.terraform.lock.hcl

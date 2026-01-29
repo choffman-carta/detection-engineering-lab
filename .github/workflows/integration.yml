@@ -24,13 +24,12 @@ jobs:
       - name: Terraform Init
         run: |
           cd infrastructure
-          terraform init -backend=false
+          terraform init -backend=false -lock=false
 
-      - name: Terraform Plan
+      - name: Terraform Validate
         run: |
           cd infrastructure
-          terraform plan -var-file=environments/local/terraform.tfvars -out=tfplan
-        continue-on-error: true
+          terraform validate
 
   docker-compose-test:
     name: Docker Compose Validation
