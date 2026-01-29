@@ -1,0 +1,111 @@
+name: Test Detections
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'detections/**'
+      - 'tests/**'
+      - 'lib/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'detections/**'
+      - 'tests/**'
+      - 'lib/**'
+
+jobs:
+  unit-tests:
+    name: Detection Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov pyyaml
+
+      - name: Run Panther detection tests
+        run: |
+          pytest tests/detection-tests/ -v --tb=short
+
+      - name: Test with sample logs
+        run: |
+          python scripts/run-detection.py test detections/panther/rules/ \
+            -e logs/samples/ \
+            --show-matches
+
+  sigma-conversion:
+    name: Sigma Rule Conversion
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sigma-cli
+        run: |
+          pip install sigma-cli pysigma-backend-elasticsearch
+
+      - name: Convert Sigma to Elasticsearch
+        run: |
+          mkdir -p output/sigma-elastic
+          for rule in detections/sigma/rules/*.yml; do
+            name=$(basename "$rule" .yml)
+            echo "Converting: $rule"
+            sigma convert -t elasticsearch \
+              -c detections/sigma/config/elastic.yml \
+              "$rule" > "output/sigma-elastic/${name}.json" || true
+          done
+          ls -la output/sigma-elastic/
+
+      - name: Upload converted rules
+        uses: actions/upload-artifact@v4
+        with:
+          name: sigma-elasticsearch-rules
+          path: output/sigma-elastic/
+          retention-days: 7
+
+  coverage-report:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov pyyaml
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/detection-tests/ \
+            --cov=lib/panther-mock \
+            --cov=detections/panther/rules \
+            --cov-report=xml \
+            --cov-report=term-missing
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false

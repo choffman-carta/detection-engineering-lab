@@ -1,0 +1,141 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  infrastructure-test:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: Terraform Init
+        run: |
+          cd infrastructure
+          terraform init -backend=false
+
+      - name: Terraform Plan
+        run: |
+          cd infrastructure
+          terraform plan -var-file=environments/local/terraform.tfvars -out=tfplan
+        continue-on-error: true
+
+  docker-compose-test:
+    name: Docker Compose Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose
+        run: |
+          docker compose config
+
+  detection-integration:
+    name: Detection Integration Test
+    runs-on: ubuntu-latest
+    needs: [infrastructure-test]
+
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd="curl -f http://localhost:9200/_cluster/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pyyaml requests sigma-cli pysigma-backend-elasticsearch
+
+      - name: Wait for Elasticsearch
+        run: |
+          for i in {1..30}; do
+            curl -s http://localhost:9200/_cluster/health && break
+            echo "Waiting for Elasticsearch..."
+            sleep 5
+          done
+
+      - name: Load sample data
+        run: |
+          # Create index
+          curl -X PUT "http://localhost:9200/detection-lab-logs-cloudtrail" \
+            -H 'Content-Type: application/json' \
+            -d '{"settings": {"number_of_shards": 1}}'
+
+          # Load sample CloudTrail events
+          cat logs/samples/aws_cloudtrail_samples.json | jq -c '.[]' | while read -r event; do
+            curl -X POST "http://localhost:9200/detection-lab-logs-cloudtrail/_doc" \
+              -H 'Content-Type: application/json' \
+              -d "$event"
+          done
+
+      - name: Run Sigma rules against Elasticsearch
+        run: |
+          # Convert and test Sigma rules
+          for rule in detections/sigma/rules/aws*.yml; do
+            echo "Testing: $rule"
+            query=$(sigma convert -t elasticsearch \
+              -c detections/sigma/config/elastic.yml \
+              "$rule" 2>/dev/null || echo '{}')
+
+            if [ "$query" != "{}" ]; then
+              curl -s -X POST "http://localhost:9200/detection-lab-logs-cloudtrail/_search" \
+                -H 'Content-Type: application/json' \
+                -d "$query" | jq '.hits.total'
+            fi
+          done
+
+      - name: Run Panther detection tests
+        run: |
+          pytest tests/detection-tests/ -v
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
